@@ -44,6 +44,31 @@ cache-keys = [
     { file = "src/**/*.h" },
 ]
 
+[tool.ty.environment]
+# Don't include src/ in first-party search path so ty finds the installed
+# package (with .pyi stubs) in .venv/lib/python3.12/site-packages/ instead
+root = ["."]
+
+[tool.ty.src]
+exclude = ["typecheck_smoke.py"]
+
+[tool.pyright]
+include = ["tests"]
+exclude = [
+    "build/**",
+    ".venv/**",
+    "**/__pycache__",
+]
+extraPaths = []
+venvPath = "."
+venv = ".venv"
+
+[tool.mypy]
+exclude = [
+    "^build/",
+    "^typecheck_smoke\\.py$",
+]
+
 [tool.cibuildwheel]
 # Necessary to see build output from the actual compilation
 build-verbosity = 1
@@ -53,6 +78,6 @@ test-command = "pytest {project}/tests"
 test-requires = "pytest"
 
 # Needed for full C++17 support
-# TODO: this needs to be fixed
+# TODO: this needs to be handled in the workflow itself
 [tool.cibuildwheel.macos.environment]
 MACOSX_DEPLOYMENT_TARGET = "10.14"
