@@ -62,16 +62,15 @@ else()
   find_package(nanobind REQUIRED)
 endif()
 
-set(PYTHON_MODULE nanobind_example)
-set(EXTENSION_MODULE nanobind_example_ext)
+set(PACKAGE_NAME nanobind_example)
 set(EXTENSION_SOURCES
-  src/nanobind_example_ext.cpp
+  src/nanobind_example.cpp
 )
 
 # We are now ready to compile the actual extension module
 nanobind_add_module(
   # Name of the extension
-  ${EXTENSION_MODULE}
+  ${PACKAGE_NAME}
 
   # Target the stable ABI for Python 3.12+, which reduces
   # the number of binary wheels that must be built. This
@@ -92,18 +91,23 @@ nanobind_add_module(
 
 # Generate type stubs for the extension module
 nanobind_add_stub(
-  ${EXTENSION_MODULE}_stub
-  MODULE ${EXTENSION_MODULE}
-  OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${EXTENSION_MODULE}.pyi
-  PYTHON_PATH $<TARGET_FILE_DIR:${EXTENSION_MODULE}>
-  DEPENDS ${EXTENSION_MODULE}
+  ${PACKAGE_NAME}_stub
+  MODULE ${PACKAGE_NAME}
+  OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${PACKAGE_NAME}.pyi
+  PYTHON_PATH $<TARGET_FILE_DIR:${PACKAGE_NAME}>
+  DEPENDS ${PACKAGE_NAME}
 )
 
-# Install the extension module and type stubs
-install(TARGETS ${EXTENSION_MODULE} LIBRARY DESTINATION ${PYTHON_MODULE})
+# Install the extension module as a package (nanobind_example/__init__.abi3.so)
+# Renaming at install time keeps the build artifacts named normally for stub generation
+get_target_property(_EXT_SUFFIX ${PACKAGE_NAME} SUFFIX)
+install(FILES $<TARGET_FILE:${PACKAGE_NAME}>
+  DESTINATION ${PACKAGE_NAME}
+  RENAME __init__${_EXT_SUFFIX}
+)
 file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/py.typed" "")
-install(FILES "${CMAKE_CURRENT_BINARY_DIR}/py.typed" DESTINATION ${PYTHON_MODULE})
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${EXTENSION_MODULE}.pyi DESTINATION ${PYTHON_MODULE})
-
-# Install the Python package files
-install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/${PYTHON_MODULE}/__init__.py DESTINATION ${PYTHON_MODULE})
+install(FILES "${CMAKE_CURRENT_BINARY_DIR}/py.typed" DESTINATION ${PACKAGE_NAME})
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${PACKAGE_NAME}.pyi
+  DESTINATION ${PACKAGE_NAME}
+  RENAME __init__.pyi
+)
