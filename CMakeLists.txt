@@ -2,6 +2,12 @@ cmake_minimum_required(VERSION 3.15...3.26)
 
 project(nanobind_example LANGUAGES CXX)
 
+# Try to import all Python components potentially needed by nanobind
+find_package(Python 3.12
+  REQUIRED COMPONENTS Interpreter Development.Module
+  OPTIONAL_COMPONENTS Development.SABIModule
+)
+
 if (NOT SKBUILD)
   message(WARNING "\
   This CMake file is meant to be executed using 'scikit-build'. Running
@@ -23,28 +29,25 @@ if (NOT SKBUILD)
   You may optionally add -Ceditable.rebuild=true to auto-rebuild when
   the package is imported. Otherwise, you need to re-run the above
   after editing C++ files.")
+
+  include(FetchContent)
+
+  # Fix warnings about DOWNLOAD_EXTRACT_TIMESTAMP
+  if(POLICY CMP0135)
+    cmake_policy(SET CMP0135 NEW)
+  endif()
+  message(STATUS "Fetching nanobind (v2.10.2)...")
+  FetchContent_Declare(nanobind
+    GIT_REPOSITORY
+      "https://github.com/wjakob/nanobind"
+    GIT_TAG
+      v2.10.2
+  )
+  FetchContent_MakeAvailable(nanobind)
+else()
+  # Use the nanobind provided by scikit-build-core
+  find_package(nanobind REQUIRED)
 endif()
-
-# Try to import all Python components potentially needed by nanobind
-find_package(Python 3.12
-  REQUIRED COMPONENTS Interpreter Development.Module
-  OPTIONAL_COMPONENTS Development.SABIModule
-)
-
-include(FetchContent)
-
-# Fix warnings about DOWNLOAD_EXTRACT_TIMESTAMP
-if(POLICY CMP0135)
-	cmake_policy(SET CMP0135 NEW)
-endif()
-message(STATUS "Fetching nanobind (v2.10.2)...")
-FetchContent_Declare(nanobind
-	GIT_REPOSITORY
-		"https://github.com/wjakob/nanobind"
-	GIT_TAG
-		v2.10.2
-)
-FetchContent_MakeAvailable(nanobind)
 
 # We are now ready to compile the actual extension module
 nanobind_add_module(
