@@ -26,12 +26,25 @@ if (NOT SKBUILD)
 endif()
 
 # Try to import all Python components potentially needed by nanobind
-find_package(Python 3.8
+find_package(Python 3.12
   REQUIRED COMPONENTS Interpreter Development.Module
-  OPTIONAL_COMPONENTS Development.SABIModule)
+  OPTIONAL_COMPONENTS Development.SABIModule
+)
 
-# Import nanobind through CMake's find_package mechanism
-find_package(nanobind CONFIG REQUIRED)
+include(FetchContent)
+
+# Fix warnings about DOWNLOAD_EXTRACT_TIMESTAMP
+if(POLICY CMP0135)
+	cmake_policy(SET CMP0135 NEW)
+endif()
+message(STATUS "Fetching nanobind (v2.10.2)...")
+FetchContent_Declare(nanobind
+	GIT_REPOSITORY
+		"https://github.com/wjakob/nanobind"
+	GIT_TAG
+		v2.10.2
+)
+FetchContent_MakeAvailable(nanobind)
 
 # We are now ready to compile the actual extension module
 nanobind_add_module(
@@ -55,5 +68,18 @@ nanobind_add_module(
   src/nanobind_example_ext.cpp
 )
 
+# Generate type stubs for the extension module
+nanobind_add_stub(
+  nanobind_example_ext_stub
+  MODULE nanobind_example_ext
+  OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/nanobind_example_ext.pyi
+  PYTHON_PATH $<TARGET_FILE_DIR:nanobind_example_ext>
+  DEPENDS nanobind_example_ext
+)
+
 # Install directive for scikit-build-core
 install(TARGETS nanobind_example_ext LIBRARY DESTINATION nanobind_example)
+
+# Install the generated type stubs
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/nanobind_example_ext.pyi DESTINATION nanobind_example)
+install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/nanobind_example/py.typed DESTINATION nanobind_example)
