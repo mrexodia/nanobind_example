@@ -78,6 +78,5 @@ test-command = "pytest {project}/tests"
 test-requires = "pytest"
 
 # Needed for full C++17 support
-# TODO: this needs to be handled in the workflow itself
 [tool.cibuildwheel.macos.environment]
 MACOSX_DEPLOYMENT_TARGET = "10.14"

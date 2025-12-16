@@ -35,7 +35,14 @@ if (NOT SKBUILD)
   # NOTE: We allow fetching nanobind directly here for development this allows
   # `cmake -B build -G Ninja -DCMAKE_EXPORT_COMPILE_COMMANDS=ON` to work as
   # expected and get proper language server support in editors like VSCode.
-  set(NANOBIND_TAG "v2.10.2")
+
+  # Extract the minimum nanobind version from pyproject.toml
+  file(READ "${CMAKE_CURRENT_SOURCE_DIR}/pyproject.toml" PYPROJECT_TOML_CONTENT)
+  if(PYPROJECT_TOML_CONTENT MATCHES "\"nanobind *[>=]= *([^\"]+)\"")
+    set(NANOBIND_TAG "v${CMAKE_MATCH_1}")
+  else()
+    message(FATAL_ERROR "Could not find nanobind version in pyproject.toml")
+  endif()
   
   # Fix warnings about DOWNLOAD_EXTRACT_TIMESTAMP
   if(POLICY CMP0135)
