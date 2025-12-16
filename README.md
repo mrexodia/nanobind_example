@@ -48,12 +48,15 @@ This project uses [uv](https://docs.astral.sh/uv/) for development.
 # Build native project (installs in editable mode)
 uv sync
 
-# Rebuild after C++ changes
+# Rebuild native project from scratch (usually not necessary)
 uv sync --reinstall
 
 # Build and run tests
 uv run pytest
 ```
+
+When using `uv run` the native code will automatically be rebuilt if changes
+are detected in the `cache-keys`.
 
 ### Local C++ Development
 

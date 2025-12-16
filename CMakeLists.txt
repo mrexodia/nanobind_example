@@ -27,25 +27,27 @@ if (NOT SKBUILD)
   in your environment once and use the following command that avoids
   a costly creation of a new virtual environment at every compilation:
   =====================================================================
-   $ pip install nanobind scikit-build-core[pyproject]
-   $ pip install --no-build-isolation -ve .
+   $ uv sync
   =====================================================================
-  You may optionally add -Ceditable.rebuild=true to auto-rebuild when
-  the package is imported. Otherwise, you need to re-run the above
-  after editing C++ files.")
+  When using uv run, the package is already rebuilt automatically if
+  it detects sources listed in cache-keys are updated.")
 
-  include(FetchContent)
-
+  # NOTE: We allow fetching nanobind directly here for development this allows
+  # `cmake -B build -G Ninja -DCMAKE_EXPORT_COMPILE_COMMANDS=ON` to work as
+  # expected and get proper language server support in editors like VSCode.
+  set(NANOBIND_TAG "v2.10.2")
+  
   # Fix warnings about DOWNLOAD_EXTRACT_TIMESTAMP
   if(POLICY CMP0135)
     cmake_policy(SET CMP0135 NEW)
   endif()
-  message(STATUS "Fetching nanobind (v2.10.2)...")
+  include(FetchContent)
+  message(STATUS "Fetching nanobind (${NANOBIND_TAG})...")
   FetchContent_Declare(nanobind
     GIT_REPOSITORY
       "https://github.com/wjakob/nanobind"
     GIT_TAG
-      v2.10.2
+      ${NANOBIND_TAG}
   )
   FetchContent_MakeAvailable(nanobind)
 else()
@@ -53,10 +55,16 @@ else()
   find_package(nanobind REQUIRED)
 endif()
 
+set(PYTHON_MODULE nanobind_example)
+set(EXTENSION_MODULE nanobind_example_ext)
+set(EXTENSION_SOURCES
+  src/nanobind_example_ext.cpp
+)
+
 # We are now ready to compile the actual extension module
 nanobind_add_module(
   # Name of the extension
-  nanobind_example_ext
+  ${EXTENSION_MODULE}
 
   # Target the stable ABI for Python 3.12+, which reduces
   # the number of binary wheels that must be built. This
@@ -72,23 +80,23 @@ nanobind_add_module(
   NB_STATIC
 
   # Source code goes here
-  src/nanobind_example_ext.cpp
+  ${EXTENSION_SOURCES}
 )
 
 # Generate type stubs for the extension module
 nanobind_add_stub(
-  nanobind_example_ext_stub
-  MODULE nanobind_example_ext
-  OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/nanobind_example_ext.pyi
-  PYTHON_PATH $<TARGET_FILE_DIR:nanobind_example_ext>
-  DEPENDS nanobind_example_ext
+  ${EXTENSION_MODULE}_stub
+  MODULE ${EXTENSION_MODULE}
+  OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${EXTENSION_MODULE}.pyi
+  PYTHON_PATH $<TARGET_FILE_DIR:${EXTENSION_MODULE}>
+  DEPENDS ${EXTENSION_MODULE}
 )
 
 # Install the extension module and type stubs
-install(TARGETS nanobind_example_ext LIBRARY DESTINATION nanobind_example)
+install(TARGETS ${EXTENSION_MODULE} LIBRARY DESTINATION ${PYTHON_MODULE})
 file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/py.typed" "")
-install(FILES "${CMAKE_CURRENT_BINARY_DIR}/py.typed" DESTINATION nanobind_example)
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/nanobind_example_ext.pyi DESTINATION nanobind_example)
+install(FILES "${CMAKE_CURRENT_BINARY_DIR}/py.typed" DESTINATION ${PYTHON_MODULE})
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${EXTENSION_MODULE}.pyi DESTINATION ${PYTHON_MODULE})
 
 # Install the Python package files
-install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/nanobind_example/__init__.py DESTINATION nanobind_example)
+install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/${PYTHON_MODULE}/__init__.py DESTINATION ${PYTHON_MODULE})
