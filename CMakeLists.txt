@@ -1,5 +1,9 @@
 cmake_minimum_required(VERSION 3.15...3.26)
 
+if(CMAKE_SOURCE_DIR STREQUAL CMAKE_BINARY_DIR)
+  message(FATAL_ERROR "In-tree builds are not supported. Run CMake from a separate directory: cmake -B build")
+endif()
+
 project(nanobind_example LANGUAGES CXX)
 
 # Try to import all Python components potentially needed by nanobind
@@ -80,9 +84,11 @@ nanobind_add_stub(
   DEPENDS nanobind_example_ext
 )
 
-# Install directive for scikit-build-core
+# Install the extension module and type stubs
 install(TARGETS nanobind_example_ext LIBRARY DESTINATION nanobind_example)
-
-# Install the generated type stubs
+file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/py.typed" "")
+install(FILES "${CMAKE_CURRENT_BINARY_DIR}/py.typed" DESTINATION nanobind_example)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/nanobind_example_ext.pyi DESTINATION nanobind_example)
-install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/nanobind_example/py.typed DESTINATION nanobind_example)
+
+# Install the Python package files
+install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/nanobind_example/__init__.py DESTINATION nanobind_example)

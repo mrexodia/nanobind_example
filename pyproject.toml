@@ -34,6 +34,9 @@ build-dir = "build/{wheel_tag}"
 # Build stable ABI wheels for CPython 3.12+
 wheel.py-api = "cp312"
 
+# This setup only works properly in redirect mode
+editable.mode = "redirect"
+
 [tool.uv]
 cache-keys = [
     { file = "CMakeLists.txt" },
