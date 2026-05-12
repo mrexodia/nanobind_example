@@ -51,6 +51,9 @@ uv sync
 # Rebuild native project from scratch (usually not necessary)
 uv sync --reinstall
 
+# Build using the current environment's build dependencies (useful once cached/offline)
+uv sync --offline --no-build-isolation --verbose
+
 # Build and run tests
 uv run pytest
 ```
@@ -63,7 +66,7 @@ are detected in the `cache-keys`.
 Generate `compile_commands.json` for IDE/LSP support (clangd, etc.):
 
 ```bash
-cmake -B build -G Ninja -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+cmake -B build -G Ninja
 ```
 
 ### Type Checking
@@ -83,17 +86,16 @@ uv run --with mypy mypy .
 
 ### Package Structure
 
-The extension module is built as `nanobind_example_ext` and re-exported through
-`nanobind_example/__init__.py`. When adding new bindings:
+The extension module is built with the import name `nanobind_example` and
+installed as a package by renaming the compiled extension to
+`nanobind_example/__init__.abi3.so`. The generated stub is installed as
+`nanobind_example/__init__.pyi` next to a `py.typed` marker.
 
-1. Add the binding in `src/nanobind_example_ext.cpp`
-2. Update `src/nanobind_example/__init__.py` to re-export the new symbols
-
-Imports must be absolute:
+When adding new bindings, add them in `src/nanobind_example.cpp` and rebuild.
+Then import from the package:
 
 ```python
-from nanobind_example import add  # Correct
-from nanobind_example_ext import add  # Won't work
+from nanobind_example import add
 ```
 
 CI Examples

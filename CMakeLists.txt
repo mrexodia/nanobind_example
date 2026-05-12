@@ -4,6 +4,9 @@ if(CMAKE_SOURCE_DIR STREQUAL CMAKE_BINARY_DIR)
   message(FATAL_ERROR "In-tree builds are not supported. Run CMake from a separate directory: cmake -B build")
 endif()
 
+# Keep compile_commands.json available for clangd and other C++ tooling.
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 project(nanobind_example LANGUAGES CXX)
 
 # Try to import all Python components potentially needed by nanobind
@@ -89,13 +92,19 @@ nanobind_add_module(
   ${EXTENSION_SOURCES}
 )
 
+target_compile_features(${PACKAGE_NAME} PRIVATE cxx_std_17)
+
 # Generate type stubs for the extension module
 nanobind_add_stub(
   ${PACKAGE_NAME}_stub
   MODULE ${PACKAGE_NAME}
   OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${PACKAGE_NAME}.pyi
   PYTHON_PATH $<TARGET_FILE_DIR:${PACKAGE_NAME}>
+  # Have stubgen create py.typed as a tracked output instead of writing it by hand.
+  MARKER_FILE py.typed
   DEPENDS ${PACKAGE_NAME}
+  # Keep names ending in "_" (common for Python keyword workarounds) in stubs.
+  INCLUDE_PRIVATE
 )
 
 # Install the extension module as a package (nanobind_example/__init__.abi3.so)
@@ -105,7 +114,6 @@ install(FILES $<TARGET_FILE:${PACKAGE_NAME}>
   DESTINATION ${PACKAGE_NAME}
   RENAME __init__${_EXT_SUFFIX}
 )
-file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/py.typed" "")
 install(FILES "${CMAKE_CURRENT_BINARY_DIR}/py.typed" DESTINATION ${PACKAGE_NAME})
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${PACKAGE_NAME}.pyi
   DESTINATION ${PACKAGE_NAME}
